@@ -2,9 +2,8 @@ import streamlit as st
 from database import init_db, get_connection
 import pandas as pd
 from datetime import datetime
-import sqlite3
-import email_utils 
-import footer 
+import email_utils
+import footer
 from dotenv import load_dotenv
 import os
 
@@ -13,6 +12,17 @@ load_dotenv()
 init_db()
 st.set_page_config("📅 Deadline Calendar")
 st.title("📅 Deadline Calendar Manager")
+
+# Add this before or after your tabs, for example right after st.title(...)
+with st.sidebar:
+    if st.button("Send Reminder Emails"):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(override=True)  # Force reload
+            email_utils.send_reminders(days_before=1)
+            st.success("✅ Reminder emails sent successfully!")
+        except Exception as e:
+            st.error(f"❌ Failed to send reminders: {e}")
 
 tabs = st.tabs(["Add Client", "Add Deadline", "View Deadlines"])
 
@@ -24,7 +34,8 @@ with tabs[0]:
     if_number = st.text_input("IF (Identifiant Fiscal)")
     email = st.text_input("Email")
     phone = st.text_input("Phone Number")
-    client_type = st.selectbox("Client Type", ["SARL", "Auto-Entrepreneur", "SAS", "Other"])
+    client_type = st.selectbox(
+        "Client Type", ["SARL", "Auto-Entrepreneur", "SAS", "Other"])
 
     if st.button("Save Client"):
         if not name or not ice:
@@ -34,7 +45,7 @@ with tabs[0]:
             c = conn.cursor()
             c.execute("""
                 INSERT INTO clients (name, ice, if_number, email, phone, type)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """, (name, ice, if_number, email, phone, client_type))
             conn.commit()
             conn.close()
@@ -54,12 +65,15 @@ with tabs[1]:
         st.warning("⚠️ You must add at least one client before adding deadlines.")
     else:
         # Client selection
-        client_dict = {f"{name} (ID {client_id})": client_id for client_id, name in clients}
-        selected_client = st.selectbox("Select Client", list(client_dict.keys()))
+        client_dict = {
+            f"{name} (ID {client_id})": client_id for client_id, name in clients}
+        selected_client = st.selectbox(
+            "Select Client", list(client_dict.keys()))
         client_id = client_dict[selected_client]
 
         # Deadline details
-        task_type = st.selectbox("Deadline Type", ["TVA", "CNSS", "IR", "IS", "Other"])
+        task_type = st.selectbox(
+            "Deadline Type", ["TVA", "CNSS", "IR", "IS", "Other"])
         period = st.text_input("Period (e.g., June 2025 or Q2 2025)")
         due_date = st.date_input("Due Date")
         status = st.selectbox("Status", ["Pending", "Done"])
@@ -69,7 +83,7 @@ with tabs[1]:
             c = conn.cursor()
             c.execute("""
                 INSERT INTO deadlines (client_id, type, period, due_date, status)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
             """, (client_id, task_type, period, due_date.strftime("%Y-%m-%d"), status))
             conn.commit()
             conn.close()
@@ -105,10 +119,12 @@ with tabs[2]:
         # Search and filter
         with st.expander("🔍 Filter"):
             search_name = st.text_input("Search by Client Name")
-            selected_status = st.selectbox("Filter by Status", ["All", "Pending", "Done"])
+            selected_status = st.selectbox(
+                "Filter by Status", ["All", "Pending", "Done"])
 
             if search_name:
-                df = df[df['client_name'].str.contains(search_name, case=False)]
+                df = df[df['client_name'].str.contains(
+                    search_name, case=False)]
 
             if selected_status != "All":
                 df = df[df['status'] == selected_status]
@@ -118,21 +134,16 @@ with tabs[2]:
         # Delete deadline
         with st.expander("🗑️ Delete a Deadline"):
             deadline_ids = df["deadline_id"].tolist()
-            to_delete = st.selectbox("Select deadline ID to delete", deadline_ids)
+            to_delete = st.selectbox(
+                "Select deadline ID to delete", deadline_ids)
 
             if st.button("Delete Deadline"):
                 conn = get_connection()
                 c = conn.cursor()
-                c.execute("DELETE FROM deadlines WHERE id = ?", (to_delete,))
+                c.execute("DELETE FROM deadlines WHERE id = %s", (to_delete,))
                 conn.commit()
                 conn.close()
                 st.success("Deadline deleted.")
-                st.experimental_rerun()
+                st.rerun()
 
 footer.footer()
-
-if __name__ == "__main__":
-    recipient = os.getenv("RECIPIENT_EMAIL")
-    email_utils.send_reminders(recipient_email=recipient, days_before=1)
-
-

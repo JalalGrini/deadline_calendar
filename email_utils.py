@@ -4,14 +4,28 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from database import get_connection
 from dotenv import load_dotenv
-import os
+import os,re
+import requests
+
+EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
+
+def is_valid_email(email):
+    return bool(email) and EMAIL_REGEX.match(email)
 
 load_dotenv()
 
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")       # Your company/accountant email here
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")          # Your email app password or actual password
+# Your company/accountant email here
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+# Your email app password or actual password
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+print(f"SMTP_SERVER: {SMTP_SERVER}")
+print(f"SMTP_PORT: {SMTP_PORT}")
+print(f"EMAIL_ADDRESS: {EMAIL_ADDRESS}")
+print(f"EMAIL_PASSWORD length: {len(EMAIL_PASSWORD) if EMAIL_PASSWORD else 'None'}")
+
 
 def send_email(to_email, subject, message):
     msg = MIMEMultipart()
@@ -24,22 +38,31 @@ def send_email(to_email, subject, message):
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
+        print("✅ Login successful!")
 
-def send_reminders(recipient_email, days_before=1):
+
+
+
+def send_reminders(days_before=1):
     conn = get_connection()
+    if(not conn):
+        print("❌ Failed to connect to the database.")
+        return
     c = conn.cursor()
 
-    reminder_date = (datetime.now() + timedelta(days=days_before)).strftime("%Y-%m-%d")
+    reminder_date = (datetime.now() +
+                     timedelta(days=days_before)).strftime("%Y-%m-%d")
 
     query = """
-    SELECT c.name, d.type, d.period, d.due_date
+    SELECT c.name, c.email, d.type, d.period, d.due_date
     FROM deadlines d
     JOIN clients c ON d.client_id = c.id
-    WHERE d.status = 'Pending' AND d.due_date = ?
+    WHERE d.status = 'Pending' AND d.due_date = %s
     ORDER BY d.due_date ASC
     """
 
     c.execute(query, (reminder_date,))
+
     rows = c.fetchall()
     conn.close()
 
@@ -47,8 +70,19 @@ def send_reminders(recipient_email, days_before=1):
         print("No upcoming deadlines to remind.")
         return
 
-    lines = [f"{name} - {task_type} - {period} - Due {due_date}" for name, task_type, period, due_date in rows]
-    message = "Upcoming deadlines:\n\n" + "\n".join(lines)
-    subject = f"Reminder: {len(rows)} deadline(s) due tomorrow"
+    # Group deadlines by client email
+    from collections import defaultdict
+    client_deadlines = defaultdict(list)
+    for name, email, task_type, period, due_date in rows:
+        client_deadlines[email].append(
+            f"{name} - {task_type} - {period} - Due {due_date}")
 
-    send_email(recipient_email, subject, message)
+    # Send email to each client
+    for email, lines in client_deadlines.items():
+        print(f"Client email: {email!r}")
+        if not is_valid_email(email):
+            print(f"Skipping invalid email: {email!r}")
+            continue
+        message = "Upcoming deadlines:\n\n" + "\n".join(lines)
+        subject = f"Reminder: {len(lines)} deadline(s) due tomorrow"
+        send_email(email, subject, message)
