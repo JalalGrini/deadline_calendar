@@ -4,13 +4,16 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from database import get_connection
 from dotenv import load_dotenv
-import os,re
+import os
+import re
 import requests
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
+
 def is_valid_email(email):
     return bool(email) and EMAIL_REGEX.match(email)
+
 
 load_dotenv()
 
@@ -24,7 +27,8 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 print(f"SMTP_SERVER: {SMTP_SERVER}")
 print(f"SMTP_PORT: {SMTP_PORT}")
 print(f"EMAIL_ADDRESS: {EMAIL_ADDRESS}")
-print(f"EMAIL_PASSWORD length: {len(EMAIL_PASSWORD) if EMAIL_PASSWORD else 'None'}")
+print(
+    f"EMAIL_PASSWORD length: {len(EMAIL_PASSWORD) if EMAIL_PASSWORD else 'None'}")
 
 
 def send_email(to_email, subject, message):
@@ -41,11 +45,9 @@ def send_email(to_email, subject, message):
         print("✅ Login successful!")
 
 
-
-
 def send_reminders(days_before=1):
     conn = get_connection()
-    if(not conn):
+    if (not conn):
         print("❌ Failed to connect to the database.")
         return
     c = conn.cursor()
