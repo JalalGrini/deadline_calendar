@@ -1,3 +1,8 @@
 streamlit
 pandas
 schedule
+python-dateutil
+streamlit-authenticator
+pyyaml
+mysql-connector-python
+python-dotenv
