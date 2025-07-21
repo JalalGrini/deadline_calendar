@@ -1,16 +1,17 @@
 import streamlit as st
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
-my_name=load_dotenv.get("MY_NAME")
-app_name=load_dotenv.get("APP_NAME")
+my_name=os.getenv("MY_NAME")
+app_name=os.getenv("APP_NAME")
 
 def footer():
     st.markdown(
-        """
+        f"""
         <style>
-        footer {
+        footer {{
             visibility: visible;
             position: fixed;
             left: 0;
@@ -21,10 +22,10 @@ def footer():
             padding: 10px 0;
             font-size: 14px;
             color: #555;
-        }
+        }}
         </style>
         <footer>
-            © 2025 {{app_name}} — Developed by {{my_name}}
+            © 2025 {app_name} — Developed by {my_name}
         </footer>
         """,
         unsafe_allow_html=True
