@@ -26,12 +26,6 @@ EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
 
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
-print(f"SMTP_SERVER: {SMTP_SERVER}")
-print(f"SMTP_PORT: {SMTP_PORT}")
-print(f"EMAIL_ADDRESS: {EMAIL_ADDRESS}")
-print(
-    f"EMAIL_PASSWORD length: {len(EMAIL_PASSWORD) if EMAIL_PASSWORD else 'None'}")
-
 # Function to send email
 def send_email(to_email, subject, message):
     msg = MIMEMultipart()
