@@ -1,4 +1,10 @@
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
+
+my_name=load_dotenv.get("MY_NAME")
+app_name=load_dotenv.get("APP_NAME")
 
 def footer():
     st.markdown(
@@ -18,7 +24,7 @@ def footer():
         }
         </style>
         <footer>
-            © 2025 Comptable Solutions — Developed by Jalal Grini
+            © 2025 {{app_name}} — Developed by {{my_name}}
         </footer>
         """,
         unsafe_allow_html=True
