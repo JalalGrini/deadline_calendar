@@ -8,4 +8,4 @@ __pycache__/
 # SQLite database
 /data/clients.db
 
-user.yaml
+.yaml
