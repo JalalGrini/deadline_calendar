@@ -3,7 +3,8 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 from database import get_connection
-import mysql.connector
+import psycopg2
+from psycopg2 import Error
 
 def init_auth():
     try:
@@ -38,7 +39,7 @@ def save_user_to_db(username, name, email, password):
             VALUES (%s, %s, %s, %s)
         """, (username, password, name, email))  # Store plain text password
         conn.commit()
-    except mysql.connector.Error as e:
+    except psycopg2.Error as e:
         conn.rollback()
         raise Exception(f"Error creating user: {e}")
     finally:

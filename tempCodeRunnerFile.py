@@ -45,7 +45,7 @@ def send_reminders(days_list=[1], username=None):
     
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE deadlines SET email_sent = FALSE WHERE email_sent = TRUE")
+    c.execute("UPDATE deadlines SET email_sent = 0 WHERE email_sent = 1")
     conn.commit()
     conn.close()
 
