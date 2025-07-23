@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: email_reminder  # Replace with your actual environment name if different
 
+    env:
+          CONNECTION_URL: ${{ secrets.CONNECTION_URL }}
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          
     steps:
       - uses: actions/checkout@v3
 
@@ -25,9 +32,4 @@ jobs:
 
       - name: Run the mail sender script
         run: python email_utils.py
-        env:
-          CONNECTION_URL: ${{ secrets.CONNECTION_URL }}
-          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        
