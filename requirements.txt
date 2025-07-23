@@ -7,3 +7,4 @@ pyyaml
 mysql-connector-python
 python-dotenv
 psycopg2-binary
+twilio
