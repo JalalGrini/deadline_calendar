@@ -4,6 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 DATABASE_URL = os.getenv("Connection_URL")
+if DATABASE_URL is None:
+    print("🚫 CONNECTION_URL is not set!")
+elif "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL:
+    print("📦 Loaded CONNECTION_URL (from local .env):", DATABASE_URL)
+else:
+    print("🔐 Loaded CONNECTION_URL (likely from GitHub Secrets):", DATABASE_URL)
 
 def init_db():
     conn = get_connection()
