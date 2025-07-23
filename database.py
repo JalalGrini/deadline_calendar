@@ -3,7 +3,7 @@ import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
-DATABASE_URL = "postgresql://postgres:lQhMnVcZoBUilEMFjRhtcPZlHodkkISL@shortline.proxy.rlwy.net:44608/railway"
+DATABASE_URL = os.getenv("CONNECTION_URL")
 if DATABASE_URL is None:
     print("🚫 CONNECTION_URL is not set!")
 elif "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL:
