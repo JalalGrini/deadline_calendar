@@ -26,6 +26,28 @@ EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
 
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
+def get_user_id_by_email(email):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT user_id FROM clients WHERE email = %s LIMIT 1
+    """, (email,))
+    result = c.fetchone()
+    conn.close()
+    if result:
+        return result[0]
+    else:
+        return None
+    
+
+
+def log_email_sent(user_id, deadline_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO email_logs (user_id, deadline_id) VALUES (%s, %s)", (user_id, deadline_id))
+    conn.commit()
+    conn.close()
+
 # Function to send email
 def send_email(to_email, subject, message):
     msg = MIMEMultipart()
@@ -60,7 +82,7 @@ def send_reminders(days_list=[1], username=None):
                         timedelta(days=days_before)).strftime("%Y-%m-%d")
 
         query = """
-        SELECT c.name, c.email, d.type, d.period, d.due_date
+        SELECT c.name, c.email, d.type, d.period, d.due_date, d.id AS deadline_id
         FROM deadlines d
         JOIN clients c ON d.client_id = c.id
         WHERE d.status = 'Pending' AND d.due_date = %s
@@ -83,9 +105,12 @@ def send_reminders(days_list=[1], username=None):
             continue
 
         client_deadlines = defaultdict(list)
-        for name, email, task_type, period, due_date in rows:
-            client_deadlines[email].append(
-                f"{name} - {task_type} - {period} - Due {due_date} ({days_before} days left)")
+        for row in rows:
+            name, email, task_type, period, due_date, deadline_id = row
+            client_deadlines[email].append({
+                "text": f"{name} - {task_type} - {period} - Due {due_date} ({days_before} days left)",
+                "deadline_id": deadline_id
+            })
 
         for email, lines in client_deadlines.items():
             print(f"Client email: {email!r}")
@@ -101,16 +126,18 @@ def send_reminders(days_list=[1], username=None):
             subject = f"Rappel : {len(lines)} échéance(s) dans {days_before} jour(s)"
             try:
                 send_email(email, subject, message)
+                for line in lines:
+                    log_email_sent(user_id, line["deadline_id"])
 
+                # Mark as sent in DB for each deadline
                 conn = get_connection()
                 c = conn.cursor()
-                c.execute("""
-                    UPDATE deadlines 
-                    SET email_sent = TRUE 
-                    WHERE status = 'Pending' AND due_date = %s AND client_id = (
-                        SELECT id FROM clients WHERE email = %s LIMIT 1
-                    )
-                """, (reminder_date, email))
+                for line in lines:
+                    c.execute("""
+                        UPDATE deadlines 
+                        SET email_sent = TRUE 
+                        WHERE id = %s
+                    """, (line["deadline_id"],))
                 conn.commit()
                 conn.close()
 
@@ -132,12 +159,17 @@ def send_individual_email(deadline_id):
     if not row:
         conn.close()
         raise ValueError("Deadline not found.")
-
     name, email, task_type, period, due_date = row
-
     if not is_valid_email(email):
         conn.close()
         raise ValueError(f"Invalid email: {email}")
+    user_id = get_user_id_by_email(email)
+    if user_id is None:
+        conn.close()
+        raise ValueError("User ID not found for this email.")
+
+
+    
 
     subject = f"Reminder: {task_type} deadline"
     message = (
@@ -150,6 +182,7 @@ def send_individual_email(deadline_id):
     )
 
     send_email(email, subject, message)
+    log_email_sent(user_id, deadline_id)
     c.execute("UPDATE deadlines SET email_sent = TRUE WHERE id = %s",
               (deadline_id,))
     conn.commit()

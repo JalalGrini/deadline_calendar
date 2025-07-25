@@ -55,9 +55,77 @@ def init_db():
         )
     """)
 
+    #create notes table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    """)
+    
+    #create email logs
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS email_logs (
+            id SERIAL PRIMARY KEY,
+            user_id INT,
+            deadline_id INT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(deadline_id) REFERENCES deadlines(id) ON DELETE CASCADE
+        )
+    """)
+
     conn.commit()
     c.close()
     conn.close()
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
+def get_all_users():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(zip([col[0] for col in c.description], row)) for row in rows]
+
+def get_clients_by_user_id(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM clients WHERE user_id = %s", (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(zip([col[0] for col in c.description], row)) for row in rows]
+
+def get_deadlines_by_client_id(client_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM deadlines WHERE client_id = %s", (client_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(zip([col[0] for col in c.description], row)) for row in rows]
+
+def delete_user(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    conn.commit()
+    conn.close()
+
+def delete_client(client_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM clients WHERE id = %s", (client_id,))
+    conn.commit()
+    conn.close()
+
+def delete_deadline(deadline_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM deadlines WHERE id = %s", (deadline_id,))
+    conn.commit()
+    conn.close()
+

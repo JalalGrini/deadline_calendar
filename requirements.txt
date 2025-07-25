@@ -8,3 +8,4 @@ mysql-connector-python
 python-dotenv
 psycopg2-binary
 twilio
+streamlit-calendar
