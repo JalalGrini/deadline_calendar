@@ -113,6 +113,7 @@ def send_reminders(days_list=[1], username=None):
             })
 
         for email, lines in client_deadlines.items():
+            lines_str = "\n".join([line["text"] for line in lines])
             print(f"Client email: {email!r}")
             if not is_valid_email(email):
                 print(f"Skipping invalid email: {email!r}")
@@ -120,7 +121,7 @@ def send_reminders(days_list=[1], username=None):
             message = (
                 f"Bonjour,\n\n"
                 f"Il reste {days_before} jour(s) avant l'échéance suivante :\n\n"
-                + "\n".join(lines) +
+                f"{lines_str}\n\n"
                 "\n\nMerci de prendre les mesures nécessaires."
             )
             subject = f"Rappel : {len(lines)} échéance(s) dans {days_before} jour(s)"
