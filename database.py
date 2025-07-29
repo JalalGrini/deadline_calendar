@@ -22,7 +22,12 @@ def init_db():
             username VARCHAR(255) NOT NULL UNIQUE,
             password_hash VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL UNIQUE
+            email VARCHAR(255) NOT NULL UNIQUE,
+            phone VARCHAR(20),
+            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            approved BOOLEAN DEFAULT FALSE,
+            approved_by VARCHAR(255),
+            approved_at TIMESTAMP
         )
     """)
 
@@ -51,11 +56,12 @@ def init_db():
             due_date DATE,
             status VARCHAR(255),
             email_sent BOOLEAN DEFAULT FALSE,
+            sms_sent BOOLEAN DEFAULT FALSE,
             FOREIGN KEY(client_id) REFERENCES clients(id) ON DELETE CASCADE
         )
     """)
 
-    #create notes table
+    # Create notes table
     c.execute("""
         CREATE TABLE IF NOT EXISTS notes (
             id SERIAL PRIMARY KEY,
@@ -63,10 +69,10 @@ def init_db():
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
+        )
     """)
-    
-    #create email logs
+
+    # Create email_logs table
     c.execute("""
         CREATE TABLE IF NOT EXISTS email_logs (
             id SERIAL PRIMARY KEY,
@@ -78,12 +84,44 @@ def init_db():
         )
     """)
 
+    # Create sms_logs table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS sms_logs (
+            id SERIAL PRIMARY KEY,
+            user_id INT,
+            deadline_id INT,
+            phone VARCHAR(20),
+            message TEXT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(deadline_id) REFERENCES deadlines(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Create message_templates table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS message_templates (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL,
+            email_message TEXT,
+            sms_message TEXT,
+            email_subject VARCHAR(255),
+            deadline_type VARCHAR(255),
+            client_id INT,
+            days_before INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(client_id) REFERENCES clients(id) ON DELETE SET NULL
+        )
+    """)
+
     conn.commit()
     c.close()
     conn.close()
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
+
 def get_all_users():
     conn = get_connection()
     c = conn.cursor()
@@ -128,4 +166,3 @@ def delete_deadline(deadline_id):
     c.execute("DELETE FROM deadlines WHERE id = %s", (deadline_id,))
     conn.commit()
     conn.close()
-
