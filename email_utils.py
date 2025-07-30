@@ -46,10 +46,10 @@ def send_email(to_email, subject, message):
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
-        print("✅ Email sent successfully!")
+        print("✅ Email envoyé avec succès !")
 
 def send_template_emails(user_id):
-    print(f"📧 Processing template emails for user_id: {user_id}")
+    print(f"📧 Traitement des emails de modèle pour user_id: {user_id}")
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
@@ -59,13 +59,13 @@ def send_template_emails(user_id):
     """, (user_id,))
     templates = c.fetchall()
     conn.close()
-    print(f"📋 Found {len(templates)} templates for user_id {user_id}")
+    print(f"📋 {len(templates)} modèles trouvés pour user_id {user_id}")
 
     for template_id, email_message_template, email_subject, deadline_type, client_id, days_before in templates:
-        print(f"🔍 Template ID {template_id}: days_before={days_before}, deadline_type={deadline_type or 'All'}, client_id={client_id or 'All'}")
+        print(f"🔍 Modèle ID {template_id}: days_before={days_before}, deadline_type={deadline_type or 'All'}, client_id={client_id or 'All'}")
         reminder_date = (datetime.now() + timedelta(days=days_before)).date()
         reminder_date_str = reminder_date.strftime("%Y-%m-%d")
-        print(f"📅 Reminder date: {reminder_date_str} (today + {days_before} days)")
+        print(f"📅 Date de rappel: {reminder_date_str} (aujourd'hui + {days_before} jours)")
 
         query = """
             SELECT c.id AS client_id, c.name, c.email, c.type, c.ice, c.if_number,
@@ -87,16 +87,16 @@ def send_template_emails(user_id):
         c.execute(query, params)
         rows = c.fetchall()
         conn.close()
-        print(f"🔎 Found {len(rows)} matching deadlines for template ID {template_id}")
+        print(f"🔎 {len(rows)} échéances correspondantes trouvées pour le modèle ID {template_id}")
 
         if not rows:
-            print(f"ℹ️ No matching deadlines for template ID {template_id} on {reminder_date_str}")
+            print(f"ℹ️ Aucune échéance correspondante pour le modèle ID {template_id} le {reminder_date_str}")
             continue
 
         for row in rows:
             client_id, client_name, client_email, client_type, ice, if_number, deadline_type, period, due_date, status, deadline_id = row
             if not is_valid_email(client_email):
-                print(f"⚠️ Skipping invalid email: {client_email}")
+                print(f"⚠️ Ignorer l'email invalide: {client_email}")
                 continue
 
             try:
@@ -113,7 +113,7 @@ def send_template_emails(user_id):
                     status=status
                 )
             except KeyError as e:
-                print(f"❌ Invalid variable in template ID {template_id}: {e}")
+                print(f"❌ Variable invalide dans le modèle ID {template_id}: {e}")
                 continue
 
             try:
@@ -124,9 +124,9 @@ def send_template_emails(user_id):
                 c.execute("UPDATE deadlines SET email_sent = TRUE WHERE id = %s", (deadline_id,))
                 conn.commit()
                 conn.close()
-                print(f"✅ Sent email to {client_email} for template ID {template_id}, deadline ID {deadline_id}")
+                print(f"✅ Email envoyé à {client_email} pour le modèle ID {template_id}, échéance ID {deadline_id}")
             except Exception as e:
-                print(f"❌ Failed to send email to {client_email}: {e}")
+                print(f"❌ Échec de l'envoi de l'email à {client_email}: {e}")
 
 def send_reminders(days_list=[1], username=None):
     user_id = get_user_id(username) if username else None
@@ -157,7 +157,7 @@ def send_reminders(days_list=[1], username=None):
         conn.close()
 
         if not rows:
-            print(f"ℹ️ No default reminders for {days_before} days before.")
+            print(f"ℹ️ Aucun rappel par défaut pour {days_before} jours avant.")
             continue
 
         client_deadlines = defaultdict(list)
@@ -173,7 +173,7 @@ def send_reminders(days_list=[1], username=None):
 
         for email, deadlines in client_deadlines.items():
             if not is_valid_email(email):
-                print(f"⚠️ Skipping invalid email: {email}")
+                print(f"⚠️ Ignorer l'email invalide: {email}")
                 continue
 
             tasks = "\n".join([f"- {d['task_type']} ({d['period']}) - Due {d['due_date']}" for d in deadlines])
@@ -194,16 +194,16 @@ def send_reminders(days_list=[1], username=None):
                     c.execute("UPDATE deadlines SET email_sent = TRUE WHERE id = %s", (d["deadline_id"],))
                 conn.commit()
                 conn.close()
-                print(f"✅ Sent default reminder to {email}")
+                print(f"✅ Rappel par défaut envoyé à {email}")
             except Exception as e:
-                print(f"❌ Failed to send default reminder to {email}: {e}")
+                print(f"❌ Échec de l'envoi du rappel par défaut à {email}: {e}")
 
     if user_id:
         try:
             send_template_emails(user_id)
-            print(f"📧 Processed template emails for user_id {user_id}")
+            print(f"📧 Emails de modèle traités pour user_id {user_id}")
         except Exception as e:
-            print(f"❌ ERROR while sending template emails for user_id {user_id}: {e}")
+            print(f"❌ ERREUR lors de l'envoi des emails de modèle pour user_id {user_id}: {e}")
 
 def send_individual_email(deadline_id):
     conn = get_connection()
@@ -221,10 +221,10 @@ def send_individual_email(deadline_id):
     conn.close()
 
     if not row:
-        raise ValueError("Deadline not found.")
+        raise ValueError("Échéance non trouvée.")
     name, email, client_id, client_type, ice, if_number, deadline_type, period, due_date, user_id = row
     if not is_valid_email(email):
-        raise ValueError(f"Invalid email: {email}")
+        raise ValueError(f"Email invalide: {email}")
 
     conn = get_connection()
     c = conn.cursor()
@@ -250,7 +250,7 @@ def send_individual_email(deadline_id):
             f"- Date limite: {due_date}\n\n"
             f"Merci de prendre les mesures nécessaires."
         )
-        subject = f"Reminder: {deadline_type} deadline"
+        subject = f"Rappel: échéance {deadline_type}"
 
     try:
         message = email_message_template.format(
@@ -266,7 +266,7 @@ def send_individual_email(deadline_id):
             status="Pending"
         )
     except KeyError as e:
-        raise ValueError(f"Invalid variable in template: {e}")
+        raise ValueError(f"Variable invalide dans le modèle: {e}")
 
     send_email(email, subject, message)
     log_email_sent(user_id, deadline_id)
@@ -309,16 +309,16 @@ def process_today_deadlines():
     conn.close()
 
 if __name__ == "__main__":
-    print("🚀 Starting email reminder job for all approved users")
+    print("🚀 Démarrage du job de rappel par email pour tous les utilisateurs approuvés")
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT id, username FROM users WHERE approved = TRUE")
     users = c.fetchall()
     conn.close()
-    print(f"👥 Found {len(users)} approved users")
+    print(f"👥 {len(users)} utilisateurs approuvés trouvés")
 
     for user_id, username in users:
-        print(f"👤 Processing user: {username} (ID: {user_id})")
+        print(f"👤 Traitement de l'utilisateur: {username} (ID: {user_id})")
         send_reminders(days_list=[20, 10, 5, 1], username=username)
     process_today_deadlines()
-    print("🏁 Email reminder job completed")
+    print("🏁 Job de rappel par email terminé")

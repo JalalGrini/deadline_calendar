@@ -314,5 +314,4 @@ def show_email_customizer(user_id):
                             st.error(f"Failed to send SMS to {client_phone}: {e}")
                     else:
                         st.warning(f"Skipping invalid phone: {client_phone}")
-
-            
+            st.success("All reminders processed.")

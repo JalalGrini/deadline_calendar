@@ -50,3 +50,4 @@ def show_calendar_view(user_id):
     }
 
     calendar(events=events, options=calendar_options)
+    

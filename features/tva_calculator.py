@@ -15,7 +15,7 @@ def calculate_ht_tva(ttc, tva_rate):
 def export_to_excel(df, enterprise_name, date_str):
     wb = Workbook()
     ws = wb.active
-    ws.title = "TVA Report"
+    ws.title = "Rapport TVA"
 
     for i in range(1, 100):
         ws.row_dimensions[i].height = 22
@@ -98,7 +98,7 @@ def export_to_excel(df, enterprise_name, date_str):
     ws.cell(row=end_row_clients + 1, column=3).fill = green_fill
 
     start_row_fournisseurs = end_row_clients + 3
-    tva_title = f"TVA RECUPERABLE le {date_str} "
+    tva_title = f"TVA RECUPERABLE le {date_str}"
     tva_fournisseur, end_row_fournisseurs = write_section(
         start_row_fournisseurs, tva_title, fournisseurs, is_client=False, first_col_header="Achats")
 
@@ -118,9 +118,9 @@ def export_to_excel(df, enterprise_name, date_str):
 
 # 🔄 Now the main UI logic in a function
 def show_tva_calculator():
-    st.title("🧾 TVA Calculator & Excel Export")
+    st.title("🧾 VAT Calculator & Excel Export")
 
-    enterprise_name = st.text_input("Nom de l'entreprise")
+    enterprise_name = st.text_input("Company Name")
     date_str = st.text_input("Date (MM/YYYY)", value="07/2025")
 
     if 'entries' not in st.session_state:
@@ -130,12 +130,12 @@ def show_tva_calculator():
         col1, col2 = st.columns(2)
         with col1:
             role = st.selectbox("Type", ["Client", "Fournisseur", "Crédit Précédent"])
-            service = st.text_input("Nom du service", value="")
+            service = st.text_input("Service Name", value="")
         with col2:
-            ttc = st.number_input("Montant TTC", min_value=0.0, step=0.01)
-            tva_rate = st.number_input("Taux de TVA %", min_value=0.0, max_value=100.0, value=20.0)
+            ttc = st.number_input("Total Incl. VAT", min_value=0.0, step=0.01)
+            tva_rate = st.number_input("VAT Rate %", min_value=0.0, max_value=100.0, value=20.0)
 
-        submitted = st.form_submit_button("Ajouter à la liste")
+        submitted = st.form_submit_button("Add to List")
         if submitted and ttc > 0:
             if role == "Crédit Précédent":
                 service = "Crédit Précédent"
@@ -169,17 +169,18 @@ def show_tva_calculator():
             for i, value in enumerate(row):
                 cols[i + 1].write(value)
 
-        if st.button("📤 Exporter vers Excel"):
+        if st.button("📤 Export to Excel"):
             current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"tva_report_{enterprise_name or 'report'}_{current_time}.xlsx"
+            filename = f"rapport_tva_{enterprise_name or 'rapport'}_{current_time}.xlsx"
             towrite = export_to_excel(df, enterprise_name, date_str)
             st.download_button(
-                label="📄 Télécharger Excel",
+                label="📄 Download Excel",
                 data=towrite,
                 file_name=filename,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            st.success("✅ Fichier Excel prêt à télécharger !")
+            st.success("✅ Excel file ready to download!")
 
-    if st.button("🔁 Réinitialiser"):
+    if st.button("🔁 Reset"):
         st.session_state['entries'] = []
+        st.rerun()

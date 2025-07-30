@@ -11,6 +11,9 @@ elif "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL:
 else:
     print("🔐 Loaded CONNECTION_URL (likely from GitHub Secrets):", DATABASE_URL)
 
+def get_connection():
+    return psycopg2.connect(DATABASE_URL)
+
 def init_db():
     conn = get_connection()
     c = conn.cursor()
@@ -118,9 +121,6 @@ def init_db():
     conn.commit()
     c.close()
     conn.close()
-
-def get_connection():
-    return psycopg2.connect(DATABASE_URL)
 
 def get_all_users():
     conn = get_connection()
