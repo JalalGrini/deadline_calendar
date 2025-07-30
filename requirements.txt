@@ -9,3 +9,4 @@ python-dotenv
 psycopg2-binary
 twilio
 streamlit-calendar
+streamlit-cookies-manager
