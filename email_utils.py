@@ -198,8 +198,12 @@ def send_reminders(days_list=[1], username=None):
             except Exception as e:
                 print(f"❌ Failed to send default reminder to {email}: {e}")
 
-        if user_id:
+    if user_id:
+        try:
             send_template_emails(user_id)
+            print(f"📧 Processed template emails for user_id {user_id}")
+        except Exception as e:
+            print(f"❌ ERROR while sending template emails for user_id {user_id}: {e}")
 
 def send_individual_email(deadline_id):
     conn = get_connection()

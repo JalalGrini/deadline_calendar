@@ -30,14 +30,14 @@ def init_auth():
     )
     return authenticator, config
 
-def save_user_to_db(username, name, email, password):
+def save_user_to_db(username, name, email, password, phone):
     conn = get_connection()
     c = conn.cursor()
     try:
         c.execute("""
-            INSERT INTO users (username, password_hash, name, email)
-            VALUES (%s, %s, %s, %s)
-        """, (username, password, name, email))  # Store plain text password
+            INSERT INTO users (username, password_hash, name, email, phone)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (username, password, name, email, phone))
         conn.commit()
     except psycopg2.Error as e:
         conn.rollback()
@@ -46,15 +46,19 @@ def save_user_to_db(username, name, email, password):
         conn.close()
 
 
+
 #  Function to handle custom login logic
 def custom_login(username, password):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT username, name FROM users WHERE username = %s AND password_hash = %s", (username, password))
+    c.execute("""
+        SELECT username, name FROM users
+        WHERE username = %s AND password_hash = %s AND approved = TRUE
+    """, (username, password))
     result = c.fetchone()
     conn.close()
     if result:
-        return result[0], result[1]  # Return username, name
+        return result[0], result[1]  # username, name
     return None, None
 
 

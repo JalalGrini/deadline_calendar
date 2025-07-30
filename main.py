@@ -11,8 +11,9 @@ import yaml
 from admin_panel import show_admin_panel
 from streamlit_cookies_manager import EncryptedCookieManager
 import io
-from tva_calculator import show_tva_calculator
-from calendar_view import show_calendar_view
+from features.tva_calculator import show_tva_calculator
+from features.calendar_view import show_calendar_view
+from features.email_customizer import show_email_customizer
 
 load_dotenv()
 
@@ -47,6 +48,13 @@ if "auth_token" in cookies and cookies["auth_token"]:
         st.session_state['authentication_status'] = True
         st.session_state['is_admin'] = False
         st.session_state['username'] = token
+        # ✅ Fetch full name from DB and set it
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT name FROM users WHERE username = %s", (token,))
+        row = c.fetchone()
+        conn.close()
+        st.session_state['name'] = row[0] if row else token  # fallback to username if no match
 else:
     if 'authentication_status' not in st.session_state:
         st.session_state['authentication_status'] = None
@@ -64,7 +72,7 @@ if st.session_state['authentication_status'] is None:
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             submit = st.form_submit_button("Login")
-
+            
             if submit:
                 if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
                     cookies["auth_token"] = "admin_token"
@@ -95,6 +103,7 @@ if st.session_state['authentication_status'] is None:
             username = st.text_input("Username")
             name = st.text_input("Full Name")
             email = st.text_input("Email")
+            phone = st.text_input("Phone Number")  # ← new
             password = st.text_input("Password", type="password")
             submit = st.form_submit_button("Register")
 
@@ -102,21 +111,11 @@ if st.session_state['authentication_status'] is None:
                 try:
                     if not username or not name or not email or not password:
                         raise ValueError("All fields are required")
-                    save_user_to_db(username, name, email, password)
-                    config['credentials']['usernames'][username] = {
-                        'email': email,
-                        'name': name,
-                        'password': password  # Plain text password
-                    }
-                    with open('users.yaml', 'w') as file:
-                        yaml.dump(config, file)
-                    st.session_state['authentication_status'] = True
-                    st.session_state['name'] = name
-                    st.session_state['username'] = username
-                    st.success("Registration successful! You are now logged in.")
-                    st.rerun()
+                    save_user_to_db(username, name, email, password, phone)
+                    st.success("✅ Votre inscription a bien été soumise. Elle sera validée par l'administrateur.")
                 except Exception as e:
                     st.error(f"Registration failed: {e}")
+
 
 else:
     # Main logged-in interface
@@ -136,7 +135,8 @@ else:
         "Exporter mes Deadlines",
         "TVA Calculator",
         "Gestion Clients & Deadlines",
-        "Calendar View"
+        "Calendar View",
+        "Customize Email"
     ]
 
     if st.session_state.get("is_admin"):
@@ -183,6 +183,9 @@ else:
 
     # Render sidebar menu
     with st.sidebar:
+        if "name" in st.session_state:
+            st.markdown(f"<p style='color:limegreen; font-weight:bold;'>👋 Bienvenue, {st.session_state['name']}</p>", unsafe_allow_html=True)
+
         st.markdown("### 📂 Menu")
         for item in menu_items:
             is_active = st.session_state.feature == item
@@ -435,6 +438,8 @@ else:
                             st.error(f"Failed to send email: {e}")
     elif feature == "Calendar View":
         show_calendar_view(user_id)
+    elif feature == "Customize Email":
+        show_email_customizer(user_id)
     elif feature == "Admin Panel" and st.session_state['is_admin']:
         show_admin_panel()
 
