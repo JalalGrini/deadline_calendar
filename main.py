@@ -24,8 +24,8 @@ if not cookies.ready():
     st.stop()
 
 init_db()
-st.set_page_config("📅 Deadline Calendar")
-st.title("📅 Deadline Calendar Manager")
+st.set_page_config("📅 ComptaPilot")
+st.title("📅 ComptaPilot")
 
 # Initialize authenticator
 authenticator, config = init_auth()
